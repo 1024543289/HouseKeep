@@ -1,0 +1,224 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../bootstrap/css/bootstrap.css">
+<script type="text/javascript" src="../js/jquery-3.4.1.min.js"></script>
+<script type="text/javascript" src="../bootstrap/js/bootstrap.js"></script>
+<script>
+	// 点击添加按钮显示模态框
+	$(function(){
+		$("#btn_add").click(function(){
+			$("#AddModal").modal("show");
+		})
+	})
+	//点击关闭和叉号隐藏模态框
+	function closeModal(){
+		$("#AddModal").modal("hide");
+	}
+	var baseURL = "http://134.175.100.63:6677";
+	//初始化数据
+	function relodeData(){
+		var url = baseURL+"/category/findAll";
+		$.get(url,function(result){
+			if (result.status === 200) {
+				$("#customer_tbl>tbody").empty();
+				result.data.forEach(function(item){
+					$(`<tr class="text-center">
+						<td><input type="checkbox" value="`+item.id+`" /></td>
+						<td name="name">`+item.name+`</td>
+						<td name="description">`+item.num+`</td>
+						<td name="price">`+item.parentID+`</td>
+						<td>
+							<a href="javascript:void(0)" class="btn btn-outline-danger btn-sm" onclick="delData.call(this)">删除</a>
+							<a href="javascript:void(0)" class="btn btn-outline-info btn-sm" onclick="upuData.call(this)">修改</a>
+
+						</td>
+					</tr>`).appendTo("#customer_tbl>tbody");
+				})
+			} else{
+				alert("数据加载出错");
+			}
+		})
+	}
+	//保存或修改分类信息
+	function submitData(){
+		//1.获取填写在表单中的分类数据
+		var id = $("#category_form input[name=id]").val();
+		var name = $("#category_form input[name=name]").val();
+		var num = $("#category_form input[name=num]").val();
+		var parentID = $("#category_form input[name=parentID]").val();
+		//2.与后台进行交互
+		var url = baseURL+"/category/saveOrUpdate";
+		var data;
+		if (id) {
+			data = {
+				id:id,
+				name:name,
+				num:num,
+				parentID:parentID
+			}
+		} else {
+			data ={
+				name:name,
+				num:num,
+				parentID:parentID,
+			}
+		}
+		$.post(url,data,function(result){
+			if (result.status ===200) {
+				$("#AddModal").modal("hide");
+				relodeData();
+			} else {
+				alert("接口异常");
+			}
+		})
+	}
+	//修改按钮绑定修改分类信息事件
+	function upuData(){
+		//1.获取表格中分类的信息
+		var id = $(this).parents("tr").find("input").val();
+		var name = $(this).parents("tr").find("td[name=name]").text();
+		var num = $(this).parents("tr").find("td[name=description]").text();
+		var parentID = $(this).parents("tr").find("td[name=price]").text();
+		//2.将获取到的信息，显示在表单中,并打开模态框和表单
+		$("#category_form input[name=id]").val(id);
+		$("#category_form input[name=name]").val(name);
+		$("#category_form input[name=num]").val(num);
+		$("#category_form input[name=parentID]").val(parentID);
+		//打开模态框
+		$("#AddModal").modal("show");
+	}
+	//删除分类信息
+	function delData(){
+		var id = $(this).parents("tr").find("input").val();
+		var data = {id:id};
+		var url = baseURL+"/category/deleteById";
+		$.get(url,data,function(result){
+			if (result.status ===200) {
+				relodeData();
+				alert(result.message);
+			} else{
+				alert(result.message);
+			}
+		})
+	}
+	//批量删除分类信息
+	function delsData(){
+		//获取ids，并将其转化为接口需要格式
+		var ids = $("input[type=checkbox]:checked").map(function(index,item){
+			return $(item).val();
+		})
+		.toArray();
+		var url = baseURL+"/category/batchDelete";
+		var data = "";
+		for(var index in ids){
+			var id = ids[index];
+			if(index == 0){
+				data += "ids="+id;
+			} else {
+				data += "&ids="+id;
+			}
+		}
+		//与后台交互
+		$.post(url,data,function(result){
+			if (result.status === 200) {
+				relodeData();
+				alert(result.message);
+			} else {
+				alert(result.message);
+			}
+		})
+	}
+	//重载数据
+	$(function(){
+		relodeData();
+		//监听模态框关闭后初始化表单
+		$('#AddModal').on('hidden.bs.modal', function (e) {
+				$(this).find("form")[0].reset();
+				$("input[name=id]").val("");
+		})
+	})
+</script>
+
+
+<!-- 内容开始 -->
+<div class="container-filed">
+	<div class="d-flex">
+		<!-- 添加按钮 -->
+		<div class="btn ">
+			<button id="btn_add" class="btn" style="background:#727df3;color:#fff;">添加分类</button>
+		</div>
+		<!-- 批量删除分类按钮 -->
+		<div class="btn">
+			<button id="btn_dels" class="btn" style="background:#727df3;color:#fff;" onclick="delsData.call(this)">批量删除</button>
+		</div>
+		<!-- 搜索框 -->
+		<form action="" class="form-inline mt-2 offset-7">
+			<div class="form-group mr-2">
+				<input type="text" placeholder="请输入关键字..." class="form-control">
+			</div>
+			<button class="btn btn-secondary">搜索</button>
+		</form>
+	</div>
+	<!-- 表格开始 -->
+	<table id="customer_tbl" class="table table-hover table-bordered rounded-lg">
+		<thead class="text-center">
+			<tr>
+				<td width="50px"><input type="checkbox" value="编号"></td>
+				<td>名称</td>
+				<td>数量</td>
+				<td>上级分类</td>
+				<td width="200px">操作</td>
+			</tr>
+		</thead>
+		<tbody>
+			
+		</tbody>
+	</table>
+	<!-- 模态框开始 -->
+	<div class="modal fade" id="AddModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	  <div class="modal-dialog " role="document">
+	    <div class="modal-content"  >
+	      <div class="modal-header">
+	        <h5 class="modal-title" id="exampleModalLabel">添加分类</h5>
+	        <button type="button" class="close" onclick="closeModal.call(this)">
+	          <span aria-hidden="true">&times;</span>
+	        </button>
+	      </div>
+	      <div class="modal-body">
+	      	<!-- 表单开始 -->
+	      	<form id="category_form">
+	      		<!-- id -->
+	      		<input type="hidden" name="id">
+	      		<!-- 分类名称 -->
+	      		<div class="form-group row">
+	      			<label for="input_name" class="col-3 text-right text-sm">分类名称</label>
+	      			<div class="col-9">
+	      				<input id="input_name" class="form-control form-control-sm" type="text" name="name" style="width:75%;">
+	      			</div>
+	      		</div>
+	      		<!-- 数量 -->
+	      		<div class="form-group row">
+	      			<label for="input_num" class="col-3 text-right">数&emsp;&emsp;量</label>
+	      			<div class="col-9">
+	      				<input id="input_num" class="form-control form-control-sm" type="text" name="num" style="width:75%;">
+	      			</div>
+	      		</div>
+	      		<!-- 上级分类 -->
+	      		<div class="form-group row">
+	      			<label for="input_parentId" class="col-3 text-right">上级分类</label>
+	      			<div class="col-9">
+	      				<input id="input_parentId" class="form-control form-control-sm" type="text" name="parentId" style="width:75%;">
+	      			</div>
+	      		</div>
+	      	</form>
+	      	<!-- 表单结束 -->
+	      </div>
+	      <!-- 关闭、保存按钮 -->
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-secondary" onclick="closeModal.call(this)">关闭</button>
+	        <button type="button" class="btn btn-primary" onclick="submitData.call(this)">保存</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	<!-- 模态框结束 -->
+</div>

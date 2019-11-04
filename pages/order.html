@@ -1,0 +1,290 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../bootstrap/css/bootstrap.css">
+<script type="text/javascript" src="../js/jquery-3.4.1.min.js"></script>
+<script type="text/javascript" src="../bootstrap/js/bootstrap.js"></script>
+<script>
+	// 点击添加按钮显示模态框
+	$(function(){
+		$("#btn_add").click(function(){
+			$("#AddModal").modal("show");
+		})
+	})
+	//点击关闭和叉号隐藏模态框
+	function closeModal(){
+		$("#AddModal").modal("hide");
+	}
+	var baseURL = "http://134.175.100.63:6677";
+	//初始化数据
+	function relodeData(){
+		var url = baseURL+"/order/findAll";
+		$.get(url,function(result){
+			if (result.status === 200) {
+				$("#order_tbl>tbody").empty();
+				result.data.forEach(function(item){
+					$(`<tr class="text-center">
+						<td><input type="checkbox" value="`+item.id+`" /></td>
+						<td name="realname">`+item.orderTime+`</td>
+						<td name="telephone">`+item.customerId+`</td>
+						<td name="password">`+item.waiterId+`</td>
+						<td name="status">`+item.addressId+`</td>
+						<td>`+item.total+`</td>
+						<td>
+							<a href="javascript:void(0)" class="btn btn-outline-danger btn-sm" onclick="delData.call(this)">删除</a>
+							<a href="javascript:void(0)" class="btn btn-outline-info btn-sm" onclick="upuData.call(this)">修改</a>
+
+						</td>
+					</tr>`).appendTo("#order_tbl>tbody");
+				})
+			} else{
+				alert("数据加载出错");
+			}
+		})
+	}
+	//保存或修改顾客信息
+	function submitData(){
+		//1.获取顾客填写在表单中的数据
+		var id = $("#order_form input[name=id]").val();
+		var orderTime = $("#order_form input[name=orderTime]").val();
+		var customerId = $("#order_form input[name=customerId]").val();
+		var waiterId = $("#order_form input[name=waiterId]").val();
+		var addressId = $("#order_form input[name=addressId]").val();
+		var total = $("#order_form input[name=total]").val();
+		//2.与后台进行交互
+		var url = baseURL+"/order/save";
+		var data;
+		if (id) {
+			data = {
+				id:id,
+				orderTime:orderTime,
+				customerId:customerId,
+				waiterId:waiterId,
+				addressId:addressId,
+				total:total
+			}
+		} else {
+			data ={
+				orderTime:orderTime,
+				customerId:customerId,
+				waiterId:waiterId,
+				addressId:addressId,
+				total:total
+			}
+		}
+		$.post(url,data,function(result){
+			if (result.status ===200) {
+				$("#AddModal").modal("hide");
+				relodeData();
+			} else {
+				alert(result.status);
+			}
+		})
+	}
+	//修改按钮绑定修改订单信息事件
+	function upuData(){
+		//1.获取表格中订单的信息
+		var id = $(this).parents("tr").find("input").val();
+		var orderTime = $(this).parents("tr").find("td[name=orderTime]").text();
+		var customerId = $(this).parents("tr").find("td[name=customerId]").text();
+		var waiterId = $(this).parents("tr").find("td[name=waiterId]").text();
+		var addressId = $(this).parents("tr").find("td[name=addressId]").text();
+		var total = $(this).parents("tr").find("td[name=total]").text();
+		//2.将获取到的信息，显示在表单中,并打开模态框和表单
+		$("#order_form input[name=id]").val(id);
+		$("#order_form input[name=orderTime]").val(orderTime);
+		$("#order_form input[name=customerId]").val(customerId);
+		$("#order_form input[name=waiterId]").val(waiterId);
+		$("#order_form input[name=addressId]").val(addressId);
+		$("#order_form input[name=total]").val(total);
+		//打开模态框
+		$("#AddModal").modal("show");
+	}
+	//删除订单信息
+	function delData(){
+		var id = $(this).parents("tr").find("input").val();
+		var data = {id:id};
+		var url = baseURL+"/order/deleteById";
+		$.get(url,data,function(result){
+			if (result.status ===200) {
+				relodeData();
+				alert(result.message);
+			} else{
+				alert(result.message);
+			}
+		})
+	}
+	//批量删除顾客信息
+	function delsData(){
+		//获取ids，并将其转化为接口需要格式
+		var ids = $("input[type=checkbox]:checked").map(function(index,item){
+			return $(item).val();
+		})
+		.toArray();
+		var url = baseURL+"/order/batchDelete";
+		var data = "";
+		for(var index in ids){
+			var id = ids[index];
+			if(index == 0){
+				data += "ids="+id;
+			} else {
+				data += "&ids="+id;
+			}
+		}
+		//与后台交互
+		$.post(url,data,function(result){
+			if (result.status === 200) {
+				relodeData();
+				alert(result.message);
+			} else {
+				alert(result.message);
+			}
+		})
+	}
+	//初始化顾客ID
+	function customerId(){
+		var  url= baseURL+"/customer/findAll";
+		$.get(url,function(result){
+			//清空下拉菜单里的内容
+			$("#input_customerId").empty();
+			//将顾客ID追加到下拉菜单中
+			result.data.forEach(function(item){
+				$("#input_customerId").append(`<option value="">`+item.id+`</option>`);
+			})
+		})
+	}
+	//初始化员工ID
+	function waiterId(){
+		var  url= baseURL+"/waiter/findAll";
+		$.get(url,function(result){
+			//清空下拉菜单里的内容
+			$("#input_waiterId").empty();
+			//将顾客ID追加到下拉菜单中
+			result.data.forEach(function(item){
+				$("#input_waiterId").append(`<option value="">`+item.id+`</option>`);
+			})
+		})
+	}
+	//初始化地址ID
+	function addressId(){
+		var  url= baseURL+"/address/findAll";
+		$.get(url,function(result){
+			//清空下拉菜单里的内容
+			$("#input_addressId").empty();
+			//将顾客ID追加到下拉菜单中
+			result.data.forEach(function(item){
+				$("#input_addressId").append(`<option value="">`+item.id+`</option>`);
+			})
+		})
+	}
+	//重载数据
+	$(function(){
+		relodeData();
+		customerId();
+		waiterId();
+		addressId();
+		//监听模态框关闭后初始化表单
+		$('#AddModal').on('hidden.bs.modal', function (e) {
+				$(this).find("form")[0].reset();
+				$("input[name=id]").val("");
+		})
+	})
+</script>
+
+<!-- 内容开始 -->
+<div class="container-filed">
+	<div class="d-flex">
+		<!-- 添加订单按钮 -->
+		<div class="btn ">
+			<button id="btn_add" class="btn" style="background:#727df3;color:#fff;">添加订单</button>
+		</div>
+		<!-- 批量删除订单按钮 -->
+		<div class="btn">
+			<button id="btn_dels" class="btn" style="background:#727df3;color:#fff;" onclick="delsData.call(this)">批量删除</button>
+		</div>
+		<!-- 搜索框 -->
+		<form action="" class="form-inline mt-2 offset-7">
+			<div class="form-group mr-2">
+				<input type="text" placeholder="请输入关键字..." class="form-control">
+			</div>
+			<button class="btn btn-secondary">搜索</button>
+		</form>
+	</div>
+	<!-- 表格开始 -->
+	<table id="order_tbl" class="table table-hover table-bordered rounded-lg">
+		<thead class="text-center">
+			<tr>
+				<td width="50px"><input type="checkbox"></td>
+				<td width="150px">创建时间</td>
+				<td>顾客编号</td>
+				<td>员工编号</td>
+				<td>地址编号</td>
+				<td>总计</td>
+				<td width="200px">操作</td>
+			</tr>
+		</thead>
+		<tbody>
+			
+		</tbody>
+	</table>
+	<!-- 模态框开始 -->
+	<div class="modal fade" id="AddModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	  <div class="modal-dialog" role="document">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <h5 class="modal-title" id="exampleModalLabel">添加订单</h5>
+	        <button type="button" class="close" onclick="closeModal.call(this)">
+	          <span aria-hidden="true">&times;</span>
+	        </button>
+	      </div>
+	      <div class="modal-body">
+	      	<!-- 表单开始 -->
+	      	<form id="order_form">
+	      		<!-- id -->
+	      		<input type="hidden" name="id">
+	      		<!-- 创建时间 -->
+	      		<div class="form-group row">
+	      			<label for="input_orderTime" class="col-3 text-right">创建时间</label>
+	      			<div class="col-9">
+	      				<input id="input_orderTime" class="form-control form-control-sm" type="text" name="orderTime" style="width:75%;">
+	      			</div>
+	      		</div>
+	      		<!-- 顾客编号 -->
+	      		<div class="form-group row">
+	      			<label for="input_customerId" class="col-3 text-right">顾客编号</label>
+	      			<div class="col-9">
+	      				<select name="input_customerId" id="input_customerId" style="width:75%;line-height:1.5em;padding:0.35rem 0.75rem;"></select>
+	      			</div>
+	      		</div>
+	      		<!-- 员工编号 -->
+	      		<div class="form-group row">
+	      			<label for="input_waiterId" class="col-3 text-right">员工编号</label>
+	      			<div class="col-9">
+	      				<select name="input_waiterId" id="input_waiterId" style="width:75%;line-height:1.5em;padding:0.35rem 0.75rem;"></select>
+	      			</div>
+	      		</div>
+	      		<!-- 地址编号 -->
+	      		<div class="form-group row">
+	      			<label for="input_addressId" class="col-3 text-right">地址编号</label>
+	      			<div class="col-9">
+	      				<select name="input_addressId" id="input_addressId" style="width:75%;line-height:1.5em;padding:0.35rem 0.75rem;"></select>
+	      			</div>
+	      		</div>
+	      		<!-- 总计 -->
+	      		<div class="form-group row">
+	      			<label for="input_total" class="col-3 text-right">总&emsp;&emsp;计</label>
+	      			<div class="col-9">
+	      				<input id="input_total" class="form-control form-control-sm" type="text" name="total" style="width:75%;">
+	      			</div>
+	      		</div>
+	      	</form>
+	      	<!-- 表单结束 -->
+	      </div>
+	      <!-- 关闭、保存按钮 -->
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-secondary" onclick="closeModal.call(this)">关闭</button>
+	        <button type="button" class="btn btn-primary" onclick="submitData.call(this)">保存</button>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	<!-- 模态框结束 -->
+</div>
